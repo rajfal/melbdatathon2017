@@ -1,0 +1,170 @@
+
+# no. of drugs in actual use:
+
+select count(distinct Drug_ID) from transactions;
++-------------------------+
+| count(distinct Drug_ID) |
++-------------------------+
+|                    6960 |
++-------------------------+
+1 row in set (0.43 sec)
+#-------------------------------------------------------------------
+# no. of drugs related to specific chronic illnesses:
+mysql> select count(MasterProductID) as No_drugs from t_drugs_in_use_info where Chronic_Illness<>'not specified';
++----------+
+| No_drugs |
++----------+
+|     1969 |
++----------+
+1 row in set (0.01 sec)
+
+# no. of meds in each category:
+#-------------------------------------------------------------------
+mysql> select Chronic_Illness as Med_category, count(MasterProductID) as No_drugs from t_drugs_in_use_info group by 1 ;
++----------------------------------------------+----------+
+| Med_category                                 | No_drugs |
++----------------------------------------------+----------+
+| Anti-Coagulant                               |       31 |
+| Chronic Obstructive Pulmonary Disease (COPD) |       16 |
+| Depression                                   |      337 |
+| Diabetes                                     |      280 |
+| Epilepsy                                     |      256 |
+| Heart Failure                                |      196 |
+| Hypertension                                 |      340 |
+| Immunology                                   |       23 |
+| Lipids                                       |      412 |
+| not specified                                |     4991 |
+| Osteoporosis                                 |       54 |
+| Urology                                      |       24 |
++----------------------------------------------+----------+
+12 rows in set (0.02 sec)
+
+#___________________________________________________________________
+#-------------------------------------------------------------------
+71.7% - drugs NOT related to major chronic illnesses
+28.2% - drugs related to major chronic illnesses
+#___________________________________________________________________
+#-------------------------------------------------------------------
+
+# no. of transactions/sales 
+
+mysql> select d.Chronic_Illness, format(count(*),0) as No_transactions from transactions as t inner join t_drugs_in_use_info as d on t.Drug_ID=d.MasterProductID group by d.Chronic_Illness;
++----------------------------------------------+-----------------+
+| Chronic_Illness                              | No_transactions |
++----------------------------------------------+-----------------+
+| Anti-Coagulant                               | 404,663         |
+| Chronic Obstructive Pulmonary Disease (COPD) | 879,917         |
+| Depression                                   | 4,439,029       |
+| Diabetes                                     | 3,618,724       |
+| Epilepsy                                     | 1,112,880       |
+| Heart Failure                                | 3,368,392       |
+| Hypertension                                 | 6,619,162       |
+| Immunology                                   | 59,433          |
+| Lipids                                       | 10,165,664      |
+| not specified                                | 27,988,242      |
+| Osteoporosis                                 | 546,735         |
+| Urology                                      | 247,944         |
++----------------------------------------------+-----------------+
+12 rows in set (37.56 sec)
+
+mysql> select format(count(*),0) as No_transactions from transactions as t inner join t_drugs_in_use_info as d on t.Drug_ID=d.MasterProductID;
++-----------------+
+| No_transactions |
++-----------------+
+| 59,450,785      |
++-----------------+
+1 row in set (9.71 sec)
+
+#___________________________________________________________________
+#-------------------------------------------------------------------
+47% - sales NOT related to major chronic illnesses
+53% - sales related to major chronic illnesses (11)
+#___________________________________________________________________
+#-------------------------------------------------------------------
+
+
+Q: how many people take ONLY non-chronic illness medications?
+
+# create summmary table
+mysql> create table t_a_test select distinct t.Patient_ID, d.Chronic_Illness from transactions as t inner join t_drugs_in_use_info as d on t.Drug_ID=d.MasterProductID where t.Patient_ID;
+
+# no. of patients taking medications:
+
+mysql> select  count(distinct Patient_ID) from t_a_test;
++----------------------------+
+| count(distinct Patient_ID) |
++----------------------------+
+|                     558352 |
++----------------------------+
+1 row in set (0.77 sec)
+
+# no. of patients taking medication that is NOT related to chronic illness
+
+mysql> select Patient_ID, count(Patient_ID) as No_Chrons, group_concat(Chronic_Illness) as Chron_Ill_List from t_a_test  
+group by Patient_ID having No_Chrons=1 and Chron_Ill_List='not specified';
+OR
+mysql> select Patient_ID, count(Patient_ID) as No_Chrons, group_concat(Chronic_Illness) as Chron_Ill_List from t_a_test  
+group by Patient_ID having No_Chrons=1 and Chron_Ill_List like '%not specified%';
++------------+-----------+----------------+
+| Patient_ID | No_Chrons | Chron_Ill_List |
++------------+-----------+----------------+
+|          3 |         1 | not specified  |
+|         78 |         1 | not specified  |
+|         84 |         1 | not specified  |
+|         85 |         1 | not specified  |
+|         .. |        .. |            ..  |
++------------+-----------+----------------+
+31585 rows in set (1.04 sec)
+
+# no. of patients taking medication that for ONLY 1 chronic illness
+
+mysql> select Patient_ID, count(Patient_ID) as No_Chrons, group_concat(Chronic_Illness) as Chron_Ill_List from t_a_test  
+group by Patient_ID having No_Chrons=1 and Chron_Ill_List<>'not specified';
+OR
+mysql> select Patient_ID, count(Patient_ID) as No_Chrons, group_concat(Chronic_Illness) as Chron_Ill_List from t_a_test  
+group by Patient_ID having No_Chrons=1 and Chron_Ill_List not like '%not specified%';
++------------+-----------+----------------+
+| Patient_ID | No_Chrons | Chron_Ill_List |
++------------+-----------+----------------+
+|         91 |         1 | Lipids         |
+|        109 |         1 | Depression     |
+|        180 |         1 | Depression     |
+|        186 |         1 | Depression     |
+|        232 |         1 | Hypertension   |
+|         .. |        .. |            ..  |
++------------+-----------+----------------+
+11769 rows in set (1.04 sec)
+
+
+#___________________________________________________________________
+#-------------------------------------------------------------------
+5.6% - patients use meds NOT related to any major chronic illnesses
+94.4% - patients use meds related to at least one major chronic illness 
+#___________________________________________________________________
+#-------------------------------------------------------------------
+
+# of patients treating at least one chronic illness (526767)
+
+#___________________________________________________________________
+#-------------------------------------------------------------------
+2.2% - patients use meds for ONLY 1 major chronic illnesses
+97.8% - patients use meds for AT LEAST 1 major chronic illness
+#___________________________________________________________________
+#-------------------------------------------------------------------
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
