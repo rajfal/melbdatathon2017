@@ -1,1 +1,1 @@
- bash and SQL scripts for viewing  MelbDatathon2017 data
+ SQL scripts for viewing  MelbDatathon2017 data
